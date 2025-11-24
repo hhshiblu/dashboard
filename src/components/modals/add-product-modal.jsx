@@ -29,17 +29,20 @@ export function AddProductModal({ open, onOpenChange }) {
 
   const [productTypes] = useState([
     "নির্বাচন করুন",
-    "ইলেকট্রনিক্স",
-    "পোশাক",
-    "খাদ্য",
-    "আসবাবপত্র",
-    "অন্যান্য",
+    "এলইডি টিভি",
+    "এলইডি টিভির প্যানেল",
+    "এলইডি টিভির সার্কিট",
+    "ওভেন",
+    "ওভেনের সার্কিট",
+    "এসির সার্কিট",
+    "ওয়াশিং মেশিনের সার্কিট",
+    "অন্যান্য পণ্য",
   ]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const productData = {
         type: formData.type,
@@ -52,7 +55,7 @@ export function AddProductModal({ open, onOpenChange }) {
       };
 
       const result = await createProduct(productData);
-      
+
       if (result.success) {
         toast.success("পণ্য সফলভাবে যোগ করা হয়েছে");
         setFormData({
@@ -206,8 +209,7 @@ export function AddProductModal({ open, onOpenChange }) {
           {/* Joma (Deposit) */}
           <div>
             <Label htmlFor="joma" className="text-sm">
-              জমা (টাকা){" "}
-              <span className="text-gray-500 text-xs">(ঐচ্ছিক)</span>
+              জমা (টাকা) <span className="text-gray-500 text-xs">(ঐচ্ছিক)</span>
             </Label>
             <div className="pt-1">
               <Input
