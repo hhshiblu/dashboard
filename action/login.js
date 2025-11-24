@@ -80,7 +80,12 @@ export const registar = async (values) => {
 //   }
 // };
 export const getUserById = async (id) => {
-  return await prisma.user.findUnique({
-    where: { id },
-  });
+  try {
+    return await db.user.findUnique({
+      where: { id },
+    });
+  } catch (error) {
+    console.error("getUserById error:", error);
+    return null;
+  }
 };
