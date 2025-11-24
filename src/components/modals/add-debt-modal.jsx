@@ -10,19 +10,40 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createDebt } from "@/actions/debtActions";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function AddDebtModal({ open, onOpenChange }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     debtor: "",
     amount: "",
     reason: "",
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Debt added:", formData);
-    setFormData({ debtor: "", amount: "", reason: "" });
-    onOpenChange(false);
+    setLoading(true);
+    
+    try {
+      const result = await createDebt(formData);
+      
+      if (result.success) {
+        toast.success("দেনা সফলভাবে যোগ করা হয়েছে");
+        setFormData({ debtor: "", amount: "", reason: "" });
+        onOpenChange(false);
+        router.refresh();
+      } else {
+        toast.error(result.message || "দেনা যোগ করতে সমস্যা হয়েছে");
+      }
+    } catch (error) {
+      toast.error("একটি ত্রুটি ঘটেছে");
+      console.error("Error adding debt:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -91,14 +112,16 @@ export function AddDebtModal({ open, onOpenChange }) {
           <div className="flex gap-2 pt-4">
             <Button
               type="submit"
-              className="flex-1 bg-teal-600 hover:bg-teal-700 text-sm cursor-pointer"
+              disabled={loading}
+              className="flex-1 bg-teal-600 hover:bg-teal-700 text-sm cursor-pointer disabled:opacity-50"
             >
-              যোগ করুন
+              {loading ? "যোগ করা হচ্ছে..." : "যোগ করুন"}
             </Button>
             <Button
               type="button"
               variant="outline"
-              className="flex-1 bg-transparent text-sm cursor-pointer"
+              disabled={loading}
+              className="flex-1 bg-transparent text-sm cursor-pointer disabled:opacity-50"
               onClick={() => onOpenChange(false)}
             >
               বাতিল

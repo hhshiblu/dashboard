@@ -10,22 +10,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createProduct } from "@/actions/productActions";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function AddProductModal({ open, onOpenChange }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     type: "নির্বাচন করুন",
     name: "",
     customerName: "",
     customerAddress: "",
     customerPhone: "",
-    deliveryDate: "",
     amount: "",
-    baki: false,
-    bakiDetails: {
-      name: "",
-      remainingAmount: "",
-      note: "",
-    },
+    joma: "",
   });
 
   const [productTypes] = useState([
@@ -37,25 +36,45 @@ export function AddProductModal({ open, onOpenChange }) {
     "অন্যান্য",
   ]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Product added:", formData);
-    setFormData({
-      type: "নির্বাচন করুন",
-      name: "",
-      customerName: "",
-      customerAddress: "",
-      customerPhone: "",
-      deliveryDate: "",
-      amount: "",
-      baki: false,
-      bakiDetails: {
-        name: "",
-        remainingAmount: "",
-        note: "",
-      },
-    });
-    onOpenChange(false);
+    setLoading(true);
+    
+    try {
+      const productData = {
+        type: formData.type,
+        name: formData.name,
+        customerName: formData.customerName,
+        customerAddress: formData.customerAddress,
+        customerPhone: formData.customerPhone,
+        amount: formData.amount,
+        joma: formData.joma,
+      };
+
+      const result = await createProduct(productData);
+      
+      if (result.success) {
+        toast.success("পণ্য সফলভাবে যোগ করা হয়েছে");
+        setFormData({
+          type: "নির্বাচন করুন",
+          name: "",
+          customerName: "",
+          customerAddress: "",
+          customerPhone: "",
+          amount: "",
+          joma: "",
+        });
+        onOpenChange(false);
+        router.refresh();
+      } else {
+        toast.error(result.message || "পণ্য যোগ করতে সমস্যা হয়েছে");
+      }
+    } catch (error) {
+      toast.error("একটি ত্রুটি ঘটেছে");
+      console.error("Error adding product:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -164,24 +183,6 @@ export function AddProductModal({ open, onOpenChange }) {
             </div>
           </div>
 
-          {/* Delivery Date */}
-          <div>
-            <Label htmlFor="deliveryDate" className="text-sm">
-              ডেলিভারি ডেট
-            </Label>
-            <div className="pt-1">
-              <Input
-                id="deliveryDate"
-                type="date"
-                value={formData.deliveryDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, deliveryDate: e.target.value })
-                }
-                className="text-sm"
-              />
-            </div>
-          </div>
-
           {/* Amount - Optional */}
           <div>
             <Label htmlFor="amount" className="text-sm">
@@ -202,110 +203,39 @@ export function AddProductModal({ open, onOpenChange }) {
             </div>
           </div>
 
-          {/* Baki Option */}
-          <div className="border-t pt-4">
-            <div className="flex items-center gap-2 mb-4">
-              <input
-                type="checkbox"
-                id="baki"
-                checked={formData.baki}
+          {/* Joma (Deposit) */}
+          <div>
+            <Label htmlFor="joma" className="text-sm">
+              জমা (টাকা){" "}
+              <span className="text-gray-500 text-xs">(ঐচ্ছিক)</span>
+            </Label>
+            <div className="pt-1">
+              <Input
+                id="joma"
+                type="number"
+                placeholder="জমা পরিমাণ লিখুন"
+                value={formData.joma}
                 onChange={(e) =>
-                  setFormData({ ...formData, baki: e.target.checked })
+                  setFormData({ ...formData, joma: e.target.value })
                 }
-                className="w-4 h-4 cursor-pointer"
+                className="text-sm"
               />
-              <Label htmlFor="baki" className="text-sm cursor-pointer">
-                বাকি যোগ করুন
-              </Label>
             </div>
-
-            {formData.baki && (
-              <div className="space-y-3 bg-gray-50 p-3 rounded-lg">
-                <div>
-                  <Label htmlFor="bakiName" className="text-sm">
-                    নাম
-                  </Label>
-                  <div className="pt-1">
-                    <Input
-                      id="bakiName"
-                      placeholder="নাম লিখুন"
-                      value={formData.bakiDetails.name}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          bakiDetails: {
-                            ...formData.bakiDetails,
-                            name: e.target.value,
-                          },
-                        })
-                      }
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="bakiAmount" className="text-sm">
-                    বাকি পরিমাণ
-                  </Label>
-                  <div className="pt-1">
-                    <Input
-                      id="bakiAmount"
-                      type="number"
-                      placeholder="বাকি পরিমাণ লিখুন"
-                      value={formData.bakiDetails.remainingAmount}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          bakiDetails: {
-                            ...formData.bakiDetails,
-                            remainingAmount: e.target.value,
-                          },
-                        })
-                      }
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="bakiNote" className="text-sm">
-                    নোট
-                  </Label>
-                  <div className="pt-1">
-                    <textarea
-                      id="bakiNote"
-                      placeholder="নোট লিখুন"
-                      value={formData.bakiDetails.note}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          bakiDetails: {
-                            ...formData.bakiDetails,
-                            note: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full border rounded-lg p-2 text-sm"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="flex gap-2 pt-4">
             <Button
               type="submit"
-              className="flex-1 bg-teal-600 hover:bg-teal-700 text-sm cursor-pointer"
+              disabled={loading}
+              className="flex-1 bg-teal-600 hover:bg-teal-700 text-sm cursor-pointer disabled:opacity-50"
             >
-              যোগ করুন
+              {loading ? "যোগ করা হচ্ছে..." : "যোগ করুন"}
             </Button>
             <Button
               type="button"
               variant="outline"
-              className="flex-1 bg-transparent text-sm cursor-pointer"
+              disabled={loading}
+              className="flex-1 bg-transparent text-sm cursor-pointer disabled:opacity-50"
               onClick={() => onOpenChange(false)}
             >
               বাতিল

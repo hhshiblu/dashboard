@@ -129,13 +129,14 @@ import {
 } from "@/components/ui/table";
 import { MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function DataTable({
   columns,
@@ -146,6 +147,9 @@ export function DataTable({
   onStatusChange,
   showActions = true,
   actionType = "other",
+  selectedIds = [],
+  onSelectAll,
+  onSelectOne,
 }) {
   const [openDropdown, setOpenDropdown] = useState(null);
 
@@ -154,11 +158,33 @@ export function DataTable({
     setOpenDropdown(null);
   };
 
+  const allSelected = data.length > 0 && selectedIds.length === data.length;
+  const someSelected = selectedIds.length > 0 && selectedIds.length < data.length;
+  
+  // Set indeterminate state for checkbox
+  useEffect(() => {
+    if (onSelectAll) {
+      const checkbox = document.querySelector('thead input[type="checkbox"]');
+      if (checkbox) {
+        checkbox.indeterminate = someSelected;
+      }
+    }
+  }, [someSelected, onSelectAll]);
+
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
+            {onSelectAll && (
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={onSelectAll}
+                  className={someSelected ? "data-[state=checked]:bg-teal-600" : ""}
+                />
+              </TableHead>
+            )}
             {columns.map((column) => (
               <TableHead key={column.key} className="text-center text-xs">
                 {column.label}
@@ -173,15 +199,26 @@ export function DataTable({
           {data.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={columns.length + (showActions ? 1 : 0)}
+                colSpan={columns.length + (showActions ? 1 : 0) + (onSelectAll ? 1 : 0)}
                 className="text-center py-8 text-gray-500 text-xs"
               >
                 কোন ডেটা পাওয়া যায়নি
               </TableCell>
             </TableRow>
           ) : (
-            data.map((row, idx) => (
-              <TableRow key={idx}>
+            data.map((row, idx) => {
+              const isSelected = selectedIds.includes(row.fullId || row.id);
+              const isOdd = idx % 2 !== 0;
+              return (
+              <TableRow key={idx} className={`${isSelected ? "bg-teal-50" : isOdd ? "bg-gray-50" : ""}`}>
+                {onSelectOne && (
+                  <TableCell>
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(checked) => onSelectOne(row.fullId || row.id, checked)}
+                    />
+                  </TableCell>
+                )}
                 {columns.map((column) => (
                   <TableCell key={column.key} className="text-center text-xs">
                     {row[column.key]}
@@ -215,7 +252,7 @@ export function DataTable({
                         )}
                         {onUpdate && (
                           <DropdownMenuItem
-                            onClick={() => handleActionClick(onUpdate, row.id)}
+                            onClick={() => handleActionClick(onUpdate, row.fullId || row.id)}
                             className="cursor-pointer"
                           >
                             আপডেট করুন
@@ -224,7 +261,7 @@ export function DataTable({
                         {onStatusChange && (
                           <DropdownMenuItem
                             onClick={() =>
-                              handleActionClick(onStatusChange, row.id)
+                              handleActionClick(onStatusChange, row.fullId || row.id)
                             }
                             className="cursor-pointer"
                           >
@@ -233,7 +270,7 @@ export function DataTable({
                         )}
                         {onDelete && (
                           <DropdownMenuItem
-                            onClick={() => handleActionClick(onDelete, row.id)}
+                            onClick={() => handleActionClick(onDelete, row.fullId || row.id)}
                             className="cursor-pointer text-red-600"
                           >
                             ডিলিট করুন
@@ -244,7 +281,8 @@ export function DataTable({
                   </TableCell>
                 )}
               </TableRow>
-            ))
+            );
+            })
           )}
         </TableBody>
       </Table>

@@ -10,13 +10,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { updateProduct } from "@/actions/productActions";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
-export function UpdateProductModal({ open, onOpenChange, onUpdate, product }) {
+export function UpdateProductModal({ open, onOpenChange, product }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     customerName: "",
     customerAddress: "",
     customerPhone: "",
+    amount: "",
+    joma: "",
   });
 
   useEffect(() => {
@@ -26,14 +33,32 @@ export function UpdateProductModal({ open, onOpenChange, onUpdate, product }) {
         customerName: product.customerName || "",
         customerAddress: product.customerAddress || "",
         customerPhone: product.customerPhone || "",
+        amount: product.amount || "",
+        joma: product.joma || "",
       });
     }
   }, [product, open]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onUpdate(formData);
-    onOpenChange(false);
+    if (!product) return;
+    
+    setLoading(true);
+    try {
+      const result = await updateProduct(product.id, formData);
+      if (result.success) {
+        toast.success("পণ্য আপডেট করা হয়েছে");
+        onOpenChange(false);
+        router.refresh();
+      } else {
+        toast.error(result.message || "পণ্য আপডেট করতে সমস্যা হয়েছে");
+      }
+    } catch (error) {
+      toast.error("একটি ত্রুটি ঘটেছে");
+      console.error("Error updating product:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -129,17 +154,57 @@ export function UpdateProductModal({ open, onOpenChange, onUpdate, product }) {
               </div>
             </div>
 
+            {/* Amount */}
+            <div>
+              <Label htmlFor="amount" className="text-sm">
+                পরিমাণ (টাকা)
+              </Label>
+              <div className="pt-1">
+                <Input
+                  id="amount"
+                  type="number"
+                  placeholder="পরিমাণ লিখুন"
+                  value={formData.amount}
+                  onChange={(e) =>
+                    setFormData({ ...formData, amount: e.target.value })
+                  }
+                  className="text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Joma */}
+            <div>
+              <Label htmlFor="joma" className="text-sm">
+                জমা (টাকা)
+              </Label>
+              <div className="pt-1">
+                <Input
+                  id="joma"
+                  type="number"
+                  placeholder="জমা পরিমাণ লিখুন"
+                  value={formData.joma}
+                  onChange={(e) =>
+                    setFormData({ ...formData, joma: e.target.value })
+                  }
+                  className="text-sm"
+                />
+              </div>
+            </div>
+
             <div className="flex gap-2 pt-4">
               <Button
                 type="submit"
-                className="flex-1 bg-teal-600 hover:bg-teal-700 text-sm cursor-pointer"
+                disabled={loading}
+                className="flex-1 bg-teal-600 hover:bg-teal-700 text-sm cursor-pointer disabled:opacity-50"
               >
-                আপডেট করুন
+                {loading ? "আপডেট করা হচ্ছে..." : "আপডেট করুন"}
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                className="flex-1 bg-transparent text-sm cursor-pointer"
+                disabled={loading}
+                className="flex-1 bg-transparent text-sm cursor-pointer disabled:opacity-50"
                 onClick={() => onOpenChange(false)}
               >
                 বাতিল

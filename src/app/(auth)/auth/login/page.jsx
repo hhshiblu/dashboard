@@ -1,12 +1,18 @@
 import LoginForm from "@/components/auth/login";
-import React from "react";
+import { Suspense } from "react";
 
-async function page() {
+export default function LoginPage() {
   return (
     <div>
-      <LoginForm />
+      <Suspense
+        fallback={
+          <div className="min-h-[50vh] flex items-center justify-center text-sm text-gray-500">
+            লোড হচ্ছে...
+          </div>
+        }
+      >
+        <LoginForm />
+      </Suspense>
     </div>
   );
 }
-
-export default page;

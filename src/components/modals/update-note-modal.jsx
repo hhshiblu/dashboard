@@ -18,8 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { updateNote } from "@/actions/noteActions";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
-export function UpdateNoteModal({ open, onOpenChange, note, onUpdate }) {
+export function UpdateNoteModal({ open, onOpenChange, note }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -29,22 +34,32 @@ export function UpdateNoteModal({ open, onOpenChange, note, onUpdate }) {
   useEffect(() => {
     if (note) {
       setFormData({
-        title: note.title,
+        title: note.title || "",
         content: note.content,
         status: note.status,
       });
     }
   }, [note, open]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (note) {
-      onUpdate(note.id, {
-        title: formData.title,
-        content: formData.content,
-        status: formData.status,
-      });
-      onOpenChange(false);
+    if (!note) return;
+    
+    setLoading(true);
+    try {
+      const result = await updateNote(note.id, formData);
+      if (result.success) {
+        toast.success("নোট আপডেট করা হয়েছে");
+        onOpenChange(false);
+        router.refresh();
+      } else {
+        toast.error(result.message || "নোট আপডেট করতে সমস্যা হয়েছে");
+      }
+    } catch (error) {
+      toast.error("একটি ত্রুটি ঘটেছে");
+      console.error("Error updating note:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -118,14 +133,16 @@ export function UpdateNoteModal({ open, onOpenChange, note, onUpdate }) {
           <div className="flex gap-2 pt-4">
             <Button
               type="submit"
-              className="flex-1 bg-teal-600 hover:bg-teal-700 text-sm cursor-pointer"
+              disabled={loading}
+              className="flex-1 bg-teal-600 hover:bg-teal-700 text-sm cursor-pointer disabled:opacity-50"
             >
-              আপডেট করুন
+              {loading ? "আপডেট করা হচ্ছে..." : "আপডেট করুন"}
             </Button>
             <Button
               type="button"
               variant="outline"
-              className="flex-1 bg-transparent text-sm cursor-pointer"
+              disabled={loading}
+              className="flex-1 bg-transparent text-sm cursor-pointer disabled:opacity-50"
               onClick={() => onOpenChange(false)}
             >
               বাতিল

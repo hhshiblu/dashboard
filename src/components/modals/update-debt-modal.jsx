@@ -10,8 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { updateDebt } from "@/actions/debtActions";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
-export function UpdateDebtModal({ open, onOpenChange, debt, onUpdate }) {
+export function UpdateDebtModal({ open, onOpenChange, debt }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     debtor: "",
     amount: "",
@@ -28,15 +33,25 @@ export function UpdateDebtModal({ open, onOpenChange, debt, onUpdate }) {
     }
   }, [debt, open]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (debt) {
-      onUpdate(debt.id, {
-        debtor: formData.debtor,
-        amount: Number(formData.amount),
-        reason: formData.reason,
-      });
-      onOpenChange(false);
+    if (!debt) return;
+    
+    setLoading(true);
+    try {
+      const result = await updateDebt(debt.id, formData);
+      if (result.success) {
+        toast.success("দেনা আপডেট করা হয়েছে");
+        onOpenChange(false);
+        router.refresh();
+      } else {
+        toast.error(result.message || "দেনা আপডেট করতে সমস্যা হয়েছে");
+      }
+    } catch (error) {
+      toast.error("একটি ত্রুটি ঘটেছে");
+      console.error("Error updating debt:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -106,14 +121,16 @@ export function UpdateDebtModal({ open, onOpenChange, debt, onUpdate }) {
           <div className="flex gap-2 pt-4">
             <Button
               type="submit"
-              className="flex-1 bg-teal-600 hover:bg-teal-700 text-sm cursor-pointer"
+              disabled={loading}
+              className="flex-1 bg-teal-600 hover:bg-teal-700 text-sm cursor-pointer disabled:opacity-50"
             >
-              আপডেট করুন
+              {loading ? "আপডেট করা হচ্ছে..." : "আপডেট করুন"}
             </Button>
             <Button
               type="button"
               variant="outline"
-              className="flex-1 bg-transparent text-sm cursor-pointer"
+              disabled={loading}
+              className="flex-1 bg-transparent text-sm cursor-pointer disabled:opacity-50"
               onClick={() => onOpenChange(false)}
             >
               বাতিল

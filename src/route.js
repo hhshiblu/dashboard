@@ -4,4 +4,4 @@ export const apiAuthPrefix = "/api/auth";
 
 export const DEFAULT_LOGIN_REDIRECT_URL = "/";
 
-export const publicRoutes = ["/", "/products", "/product"];
+export const publicRoutes = [];

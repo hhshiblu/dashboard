@@ -1,16 +1,35 @@
-import DebtPage from "@/components/debt/debt";
 import { Header } from "@/components/header";
-import React from "react";
+import { DebtClient } from "@/components/debt/debt-client";
+import { getDebts } from "@/actions/debtActions";
 
-function page() {
+export const dynamic = "force-dynamic";
+
+export default async function DebtPage({ searchParams }) {
+  const searchParamsObj = await searchParams;
+  const result = await getDebts(searchParamsObj);
+
+  if (!result.success) {
+    return (
+      <div>
+        <Header />
+        <div className="md:max-w-7xl mx-auto p-4">
+          <p className="text-red-500">{result.message}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <Header />
       <div className="md:max-w-7xl mx-auto">
-        <DebtPage />
+        <DebtClient
+          debts={result.data || []}
+          pagination={
+            result.pagination || { page: 1, limit: 3, total: 0, totalPages: 1 }
+          }
+        />
       </div>
     </div>
   );
 }
-
-export default page;

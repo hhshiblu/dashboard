@@ -18,19 +18,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { createNote } from "@/actions/noteActions";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function AddNoteModal({ open, onOpenChange }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     content: "",
     status: "সক্রিয়",
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Note added:", formData);
-    setFormData({ title: "", content: "", status: "সক্রিয়" });
-    onOpenChange(false);
+    setLoading(true);
+    
+    try {
+      const result = await createNote(formData);
+      
+      if (result.success) {
+        toast.success("নোট সফলভাবে যোগ করা হয়েছে");
+        setFormData({ title: "", content: "", status: "সক্রিয়" });
+        onOpenChange(false);
+        router.refresh();
+      } else {
+        toast.error(result.message || "নোট যোগ করতে সমস্যা হয়েছে");
+      }
+    } catch (error) {
+      toast.error("একটি ত্রুটি ঘটেছে");
+      console.error("Error adding note:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,17 +64,16 @@ export function AddNoteModal({ open, onOpenChange }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="title" className="text-sm">
-              শিরোনাম
+              শিরোনাম <span className="text-gray-500 text-xs">(ঐচ্ছিক)</span>
             </Label>
             <div className="pt-1">
               <Input
                 id="title"
-                placeholder="শিরোনাম লিখুন"
+                placeholder="শিরোনাম লিখুন (ঐচ্ছিক)"
                 value={formData.title}
                 onChange={(e) =>
                   setFormData({ ...formData, title: e.target.value })
                 }
-                required
                 className="text-sm"
               />
             </div>
@@ -103,14 +123,16 @@ export function AddNoteModal({ open, onOpenChange }) {
           <div className="flex gap-2 pt-4">
             <Button
               type="submit"
-              className="flex-1 bg-teal-600 hover:bg-teal-700 text-sm cursor-pointer"
+              disabled={loading}
+              className="flex-1 bg-teal-600 hover:bg-teal-700 text-sm cursor-pointer disabled:opacity-50"
             >
-              যোগ করুন
+              {loading ? "যোগ করা হচ্ছে..." : "যোগ করুন"}
             </Button>
             <Button
               type="button"
               variant="outline"
-              className="flex-1 bg-transparent text-sm cursor-pointer"
+              disabled={loading}
+              className="flex-1 bg-transparent text-sm cursor-pointer disabled:opacity-50"
               onClick={() => onOpenChange(false)}
             >
               বাতিল

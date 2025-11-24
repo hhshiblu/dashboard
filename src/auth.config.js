@@ -55,6 +55,6 @@ export default {
     signIn: "/auth/login",
     signOut: "/",
   },
-  secret: process.env.JWT_SECRET,
+  secret: process.env.AUTH_SECRET || process.env.JWT_SECRET || "fallback-secret-change-in-production",
   trustHost: true,
 };
