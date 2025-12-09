@@ -30,7 +30,7 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} ${banglaSans.variable} antialiased`}
       >
         {children}
-        <Toaster position="top-center" />
+        <Toaster position="top-center" closeButton />
       </body>
     </html>
   );

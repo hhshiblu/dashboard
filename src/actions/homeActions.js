@@ -14,141 +14,106 @@ export async function getHomeStats() {
     const userId = session.user.id;
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59
+    );
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    const chartMonths = 6;
-    const chartStartDate = new Date(now.getFullYear(), now.getMonth() - (chartMonths - 1), 1);
 
-    // Get all products for calculations
+    // Get all products
     const allProducts = await db.product.findMany({
       where: { userId },
     });
 
-    // Counts
-    const pendingCount = allProducts.filter(p => p.status === "pending").length;
-    const kajComplateCount = allProducts.filter(p => p.status === "কাজ সম্পন্ন").length;
-    const deliveredCount = allProducts.filter(p => p.status === "delivered").length;
-    const oneMonthOldCount = allProducts.filter(p => new Date(p.createdAt) <= oneMonthAgo).length;
+    // Pending work - products with status "pending"
+    const pendingCount = allProducts.filter(
+      (p) => p.status === "pending"
+    ).length;
 
-    // Monthly calculations
-    const monthlyProducts = allProducts.filter(p => new Date(p.createdAt) >= startOfMonth);
-    const monthlyIncome = monthlyProducts
-      .filter(p => p.status === "delivered")
-      .reduce((sum, p) => sum + (p.joma || 0), 0);
-    
+    // Completed work - products with status "কাজ সম্পন্ন"
+    const kajComplateCount = allProducts.filter(
+      (p) => p.status === "কাজ সম্পন্ন"
+    ).length;
+
+    // One month old products - products older than one month
+    const oneMonthOldCount = allProducts.filter(
+      (p) => new Date(p.createdAt) <= oneMonthAgo
+    ).length;
+
+    // This month's work - products created this month
+    const monthlyProducts = allProducts.filter(
+      (p) =>
+        new Date(p.createdAt) >= startOfMonth &&
+        new Date(p.createdAt) <= endOfMonth
+    );
+    const totalWork = monthlyProducts.length;
+
+    // This month's income - products joma created this month (monthly wise)
+    const monthlyIncome = monthlyProducts.reduce(
+      (sum, p) => sum + (p.joma || 0),
+      0
+    );
+
+    // This month's expense - from expenses table
     const monthlyExpenses = await db.expense.aggregate({
       where: {
         userId,
-        createdAt: { gte: startOfMonth },
+        createdAt: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
       },
       _sum: {
         amount: true,
       },
     });
 
-    const monthlyDebts = await db.debt.aggregate({
-      where: {
-        userId,
-        createdAt: { gte: startOfMonth },
-      },
-      _sum: {
-        amount: true,
-      },
-    });
+    // This month's balance - products joma (this month) - expenses (this month)
+    const monthlyBalance = monthlyIncome - (monthlyExpenses._sum.amount || 0);
 
-    const totalIncome = allProducts
-      .filter(p => p.status === "delivered")
-      .reduce((sum, p) => sum + (p.joma || 0), 0);
+    // Total products count
+    const totalProducts = allProducts.length;
 
-    const totalExpenses = await db.expense.aggregate({
-      where: { userId },
-      _sum: { amount: true },
-    });
+    // Total deliveries - products with status "delivered"
+    const deliveredCount = allProducts.filter(
+      (p) => p.status === "delivered"
+    ).length;
 
+    // Total income - all products joma sum (not filtered by status)
+    const totalIncome = allProducts.reduce((sum, p) => sum + (p.joma || 0), 0);
+
+    // Total debt - from debt table
     const totalDebts = await db.debt.aggregate({
       where: { userId },
       _sum: { amount: true },
     });
 
-    const recentProducts = await db.product.findMany({
-      where: {
-        userId,
-        createdAt: { gte: chartStartDate },
-      },
-      select: {
-        createdAt: true,
-        updatedAt: true,
-        status: true,
-      },
+    // Total expense - from expense table (all time)
+    const totalExpenses = await db.expense.aggregate({
+      where: { userId },
+      _sum: { amount: true },
     });
-
-    const recentExpenses = await db.expense.findMany({
-      where: {
-        userId,
-        createdAt: { gte: chartStartDate },
-      },
-      select: {
-        createdAt: true,
-        amount: true,
-      },
-    });
-
-    const banglaMonths = ["জানু", "ফেব্রু", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টে", "অক্টো", "নভে", "ডিসে"];
-
-    const chartData = Array.from({ length: chartMonths }).map((_, idx) => {
-      const monthOffset = chartMonths - idx - 1;
-      const start = new Date(now.getFullYear(), now.getMonth() - monthOffset, 1);
-      const end = new Date(now.getFullYear(), now.getMonth() - monthOffset + 1, 1);
-      const label = banglaMonths[start.getMonth()];
-
-      const productsCount = recentProducts.filter(
-        (p) => new Date(p.createdAt) >= start && new Date(p.createdAt) < end
-      ).length;
-
-      const deliveryCount = recentProducts.filter(
-        (p) =>
-          p.status === "delivered" &&
-          new Date(p.updatedAt) >= start &&
-          new Date(p.updatedAt) < end
-      ).length;
-
-      const expenseSum = recentExpenses
-        .filter((e) => new Date(e.createdAt) >= start && new Date(e.createdAt) < end)
-        .reduce((sum, e) => sum + (e.amount || 0), 0);
-
-      return {
-        month: label,
-        products: productsCount,
-        delivery: deliveryCount,
-        expense: Number(expenseSum.toFixed(0)),
-      };
-    });
-
-    const monthlyBalance = monthlyIncome - (monthlyExpenses._sum.amount || 0);
-    const totalWork = monthlyProducts.length;
 
     return {
       success: true,
       data: {
         pendingCount,
         kajComplateCount,
-        deliveredCount,
         oneMonthOldCount,
+        totalWork,
         monthlyIncome,
         monthlyExpenses: monthlyExpenses._sum.amount || 0,
         monthlyBalance,
-        totalWork,
-        totalProducts: allProducts.length,
+        totalProducts,
+        deliveredCount,
         totalIncome,
-        totalExpenses: totalExpenses._sum.amount || 0,
         totalDebts: totalDebts._sum.amount || 0,
-        totalPending: allProducts
-          .filter(p => p.status === "delivered")
-          .reduce((sum, p) => {
-            const remaining = (p.amount || 0) - (p.joma || 0);
-            return sum + (remaining > 0 ? remaining : 0);
-          }, 0),
-        chartData,
+        totalExpenses: totalExpenses._sum.amount || 0,
       },
     };
   } catch (error) {
@@ -156,4 +121,3 @@ export async function getHomeStats() {
     return { success: false, message: error.message };
   }
 }
-

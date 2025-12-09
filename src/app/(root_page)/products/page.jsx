@@ -26,7 +26,7 @@ export default async function ProductsPage({ searchParams }) {
         <ProductsClient
           products={result.data || []}
           pagination={
-            result.pagination || { page: 1, limit: 3, total: 0, totalPages: 1 }
+            result.pagination || { page: 1, limit: 12, total: 0, totalPages: 1 }
           }
         />
       </div>

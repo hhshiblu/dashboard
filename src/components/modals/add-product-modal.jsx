@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { createProduct } from "@/actions/productActions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { X } from "lucide-react";
 
 export function AddProductModal({ open, onOpenChange }) {
   const router = useRouter();
@@ -41,6 +42,68 @@ export function AddProductModal({ open, onOpenChange }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation
+    if (formData.type === "নির্বাচন করুন") {
+      const id = toast.error("অনুগ্রহ করে প্রোডাক্ট টাইপ নির্বাচন করুন", {
+        action: {
+          label: "ঠিক আছে",
+          onClick: () => {
+            toast.dismiss(id);
+          },
+        },
+      });
+      return;
+    }
+
+    if (!formData.name.trim()) {
+      const id = toast.error("অনুগ্রহ করে প্রোডাক্ট নাম লিখুন", {
+        action: {
+          label: "ঠিক আছে",
+          onClick: () => {
+            toast.dismiss(id);
+          },
+        },
+      });
+      return;
+    }
+
+    if (!formData.customerName.trim()) {
+      const id = toast.error("অনুগ্রহ করে কাস্টমার নাম লিখুন", {
+        action: {
+          label: "ঠিক আছে",
+          onClick: () => {
+            toast.dismiss(id);
+          },
+        },
+      });
+      return;
+    }
+
+    if (!formData.customerAddress.trim()) {
+      const id = toast.error("অনুগ্রহ করে কাস্টমার টিকানা লিখুন", {
+        action: {
+          label: "ঠিক আছে",
+          onClick: () => {
+            toast.dismiss(id);
+          },
+        },
+      });
+      return;
+    }
+
+    if (!formData.customerPhone.trim()) {
+      const id = toast.error("অনুগ্রহ করে কাস্টমার ফোন নাম্বার লিখুন", {
+        action: {
+          label: "ঠিক আছে",
+          onClick: () => {
+            toast.dismiss(id);
+          },
+        },
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -57,7 +120,14 @@ export function AddProductModal({ open, onOpenChange }) {
       const result = await createProduct(productData);
 
       if (result.success) {
-        toast.success("পণ্য সফলভাবে যোগ করা হয়েছে");
+        const id = toast.success("পণ্য সফলভাবে যোগ করা হয়েছে", {
+          action: {
+            label: "ঠিক আছে",
+            onClick: () => {
+              toast.dismiss(id);
+            },
+          },
+        });
         setFormData({
           type: "নির্বাচন করুন",
           name: "",
@@ -70,10 +140,27 @@ export function AddProductModal({ open, onOpenChange }) {
         onOpenChange(false);
         router.refresh();
       } else {
-        toast.error(result.message || "পণ্য যোগ করতে সমস্যা হয়েছে");
+        const id = toast.error(
+          result.message || "পণ্য যোগ করতে সমস্যা হয়েছে",
+          {
+            action: {
+              label: "ঠিক আছে",
+              onClick: () => {
+                toast.dismiss(id);
+              },
+            },
+          }
+        );
       }
     } catch (error) {
-      toast.error("একটি ত্রুটি ঘটেছে");
+      const id = toast.error("একটি ত্রুটি ঘটেছে", {
+        action: {
+          label: "ঠিক আছে",
+          onClick: () => {
+            toast.dismiss(id);
+          },
+        },
+      });
       console.error("Error adding product:", error);
     } finally {
       setLoading(false);
@@ -82,12 +169,31 @@ export function AddProductModal({ open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="!top-[45%] w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto px-2"
+        showCloseButton={false}
+        onInteractOutside={(e) => {
+          // Prevent closing when clicking outside
+          e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          // Allow ESC key to close
+          onOpenChange(false);
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => onOpenChange(false)}
+          className="absolute top-4 right-4 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </button>
         <DialogHeader>
           <DialogTitle className="text-lg">নতুন পণ্য যোগ করুন</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 px-1">
           {/* Product Type */}
           <div>
             <Label htmlFor="type" className="text-sm">
@@ -124,7 +230,6 @@ export function AddProductModal({ open, onOpenChange }) {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                required
                 className="text-sm"
               />
             </div>
@@ -143,7 +248,6 @@ export function AddProductModal({ open, onOpenChange }) {
                 onChange={(e) =>
                   setFormData({ ...formData, customerName: e.target.value })
                 }
-                required
                 className="text-sm"
               />
             </div>

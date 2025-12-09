@@ -7,44 +7,37 @@ import { useState, useEffect } from "react";
 
 export function FilterSidebar({ open, onOpenChange, onFilter, onDateFilter, activeFilters, onRemoveFilter }) {
   const [deliveryStatus, setDeliveryStatus] = useState(activeFilters?.status || "");
-  const [priceRange, setPriceRange] = useState({ 
-    min: activeFilters?.minPrice || "", 
-    max: activeFilters?.maxPrice || "" 
-  });
-  const [dateFilter, setDateFilter] = useState(activeFilters?.dateFilter || null);
+  const [dateFilter, setDateFilter] = useState(activeFilters?.dateFilter || "");
 
   useEffect(() => {
     setDeliveryStatus(activeFilters?.status || "");
-    setPriceRange({ 
-      min: activeFilters?.minPrice || "", 
-      max: activeFilters?.maxPrice || "" 
-    });
-    setDateFilter(activeFilters?.dateFilter || null);
+    setDateFilter(activeFilters?.dateFilter || "");
   }, [activeFilters]);
 
   const handleApplyFilter = () => {
     onFilter({
       deliveryStatus,
-      priceRange,
     });
     if (onDateFilter) {
-      onDateFilter(dateFilter);
+      onDateFilter(dateFilter || null);
     }
     onOpenChange(false);
   };
 
   const activeFilterList = [];
   if (activeFilters?.status) {
-    activeFilterList.push({ type: "status", label: `স্ট্যাটাস: ${activeFilters.status}`, value: activeFilters.status });
-  }
-  if (activeFilters?.minPrice) {
-    activeFilterList.push({ type: "minPrice", label: `ন্যূনতম: ${activeFilters.minPrice} ৳`, value: activeFilters.minPrice });
-  }
-  if (activeFilters?.maxPrice) {
-    activeFilterList.push({ type: "maxPrice", label: `সর্বোচ্চ: ${activeFilters.maxPrice} ৳`, value: activeFilters.maxPrice });
+    const statusLabel = activeFilters.status === "pending" ? "পেন্ডিং" : 
+                       activeFilters.status === "কাজ সম্পন্ন" ? "কাজ সম্পন্ন" : 
+                       activeFilters.status === "delivered" ? "ডেলিভার করা হয়েছে" : activeFilters.status;
+    activeFilterList.push({ type: "status", label: `স্ট্যাটাস: ${statusLabel}`, value: activeFilters.status });
   }
   if (activeFilters?.dateFilter) {
-    activeFilterList.push({ type: "dateFilter", label: "এক মাস হয়ে গেছে", value: activeFilters.dateFilter });
+    const dateLabels = {
+      "oneMonth": "এক মাস হয়ে গেছে",
+      "thisMonth": "এই মাসের পণ্য",
+      "lastSixMonths": "গত ৬ মাস"
+    };
+    activeFilterList.push({ type: "dateFilter", label: dateLabels[activeFilters.dateFilter] || activeFilters.dateFilter, value: activeFilters.dateFilter });
   }
 
   return (
@@ -99,23 +92,52 @@ export function FilterSidebar({ open, onOpenChange, onFilter, onDateFilter, acti
           )}
 
           <div className="flex-1 space-y-6 overflow-y-auto">
+            {/* Date Filters */}
             <div>
               <label className="block text-sm font-medium mb-2">
                 তারিখ অনুসারে
               </label>
-              <Button
-                variant={dateFilter === "oneMonth" ? "default" : "outline"}
-                onClick={() =>
-                  setDateFilter(dateFilter === "oneMonth" ? null : "oneMonth")
-                }
-                className={`w-full text-sm ${
-                  dateFilter === "oneMonth"
-                    ? "bg-teal-600 hover:bg-teal-700 text-white"
-                    : "border-gray-300"
-                }`}
-              >
-                এক মাস হয়ে গেছে
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  variant={dateFilter === "oneMonth" ? "default" : "outline"}
+                  onClick={() =>
+                    setDateFilter(dateFilter === "oneMonth" ? "" : "oneMonth")
+                  }
+                  className={`w-full text-sm ${
+                    dateFilter === "oneMonth"
+                      ? "bg-teal-600 hover:bg-teal-700 text-white"
+                      : "border-gray-300"
+                  }`}
+                >
+                  এক মাস হয়ে গেছে
+                </Button>
+                <Button
+                  variant={dateFilter === "thisMonth" ? "default" : "outline"}
+                  onClick={() =>
+                    setDateFilter(dateFilter === "thisMonth" ? "" : "thisMonth")
+                  }
+                  className={`w-full text-sm ${
+                    dateFilter === "thisMonth"
+                      ? "bg-teal-600 hover:bg-teal-700 text-white"
+                      : "border-gray-300"
+                  }`}
+                >
+                  এই মাসের পণ্য
+                </Button>
+                <Button
+                  variant={dateFilter === "lastSixMonths" ? "default" : "outline"}
+                  onClick={() =>
+                    setDateFilter(dateFilter === "lastSixMonths" ? "" : "lastSixMonths")
+                  }
+                  className={`w-full text-sm ${
+                    dateFilter === "lastSixMonths"
+                      ? "bg-teal-600 hover:bg-teal-700 text-white"
+                      : "border-gray-300"
+                  }`}
+                >
+                  গত ৬ মাস
+                </Button>
+              </div>
             </div>
 
             {/* Delivery Status Filter */}
@@ -133,33 +155,6 @@ export function FilterSidebar({ open, onOpenChange, onFilter, onDateFilter, acti
                 <option value="কাজ সম্পন্ন">কাজ সম্পন্ন</option>
                 <option value="delivered">ডেলিভার করা হয়েছে</option>
               </select>
-            </div>
-
-            {/* Price Range Filter */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                মূল্য পরিসীমা
-              </label>
-              <div className="space-y-2">
-                <Input
-                  type="number"
-                  placeholder="ন্যূনতম"
-                  value={priceRange.min}
-                  onChange={(e) =>
-                    setPriceRange({ ...priceRange, min: e.target.value })
-                  }
-                  className="text-sm"
-                />
-                <Input
-                  type="number"
-                  placeholder="সর্বোচ্চ"
-                  value={priceRange.max}
-                  onChange={(e) =>
-                    setPriceRange({ ...priceRange, max: e.target.value })
-                  }
-                  className="text-sm"
-                />
-              </div>
             </div>
           </div>
 

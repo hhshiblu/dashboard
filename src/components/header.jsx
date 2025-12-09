@@ -27,14 +27,14 @@ export function Header({ onSearch }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-blue-600 text-white">
+    <header className="sticky top-0 z-50 bg-[#00453e] text-white">
       <div className="flex items-center justify-between px-4 py-4 md:px-6 gap-4">
         <div className="flex items-center gap-8">
           <h1
-            className="text-2xl md:text-3xl font-bold cursor-pointer font-sans"
+            className="text-xl md:text-xl font-bold cursor-pointer font-sans"
             onClick={() => router.push("/")}
           >
-            ড্যাশবোর্ড
+            নাইম ইলেকট্রনিক্স
           </h1>
           {!isMobile && (
             <nav className="flex gap-6">
@@ -62,7 +62,7 @@ export function Header({ onSearch }) {
               placeholder="খুঁজুন..."
               value={searchQuery}
               onChange={handleSearch}
-              className="pl-10 bg-blue-500 border-blue-400 text-white placeholder:text-blue-200 text-sm md:text-base lg:text-lg font-sans py-2 md:py-3"
+              className="pl-10 bg-white border-blue-400 text-black placeholder:text-gray-500 text-sm md:text-base lg:text-lg font-sans py-2 md:py-3"
             />
           </div>
         )}

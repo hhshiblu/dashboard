@@ -175,9 +175,9 @@ export function DataTable({
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-teal-100">
             {onSelectAll && (
-              <TableHead className="w-12">
+              <TableHead className="w-12 bg-teal-100">
                 <Checkbox
                   checked={allSelected}
                   onCheckedChange={onSelectAll}
@@ -186,12 +186,12 @@ export function DataTable({
               </TableHead>
             )}
             {columns.map((column) => (
-              <TableHead key={column.key} className="text-center text-xs">
+              <TableHead key={column.key} className="text-center text-xs bg-teal-100">
                 {column.label}
               </TableHead>
             ))}
             {showActions && (
-              <TableHead className="text-center text-xs">অ্যাকশন</TableHead>
+              <TableHead className="text-center text-xs bg-teal-100">অ্যাকশন</TableHead>
             )}
           </TableRow>
         </TableHeader>
@@ -244,7 +244,7 @@ export function DataTable({
                       <DropdownMenuContent align="end" className="w-40">
                         {actionType === "product" && onPrint && (
                           <DropdownMenuItem
-                            onClick={() => handleActionClick(onPrint, row.id)}
+                            onClick={() => handleActionClick(onPrint, row.fullId || row.id)}
                             className="cursor-pointer"
                           >
                             প্রিন্ট করুন
@@ -253,7 +253,8 @@ export function DataTable({
                         {onUpdate && (
                           <DropdownMenuItem
                             onClick={() => handleActionClick(onUpdate, row.fullId || row.id)}
-                            className="cursor-pointer"
+                            disabled={row.originalStatus === "delivered"}
+                            className={`cursor-pointer ${row.originalStatus === "delivered" ? "opacity-50 cursor-not-allowed" : ""}`}
                           >
                             আপডেট করুন
                           </DropdownMenuItem>
@@ -263,7 +264,8 @@ export function DataTable({
                             onClick={() =>
                               handleActionClick(onStatusChange, row.fullId || row.id)
                             }
-                            className="cursor-pointer"
+                            disabled={row.originalStatus === "delivered"}
+                            className={`cursor-pointer ${row.originalStatus === "delivered" ? "opacity-50 cursor-not-allowed" : ""}`}
                           >
                             স্ট্যাটাস আপডেট করুন
                           </DropdownMenuItem>

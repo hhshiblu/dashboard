@@ -13,13 +13,11 @@ export async function getProducts(searchParams = {}) {
     }
 
     const page = parseInt(searchParams.page || "1");
-    const limit = parseInt(searchParams.limit || "3");
+    const limit = parseInt(searchParams.limit || "12");
     const skip = (page - 1) * limit;
     
     const search = searchParams.search || "";
     const status = searchParams.status || "";
-    const minPrice = searchParams.minPrice ? parseFloat(searchParams.minPrice) : null;
-    const maxPrice = searchParams.maxPrice ? parseFloat(searchParams.maxPrice) : null;
     const dateFilter = searchParams.dateFilter || "";
 
     // Build where clause
@@ -31,16 +29,6 @@ export async function getProducts(searchParams = {}) {
       where.status = status;
     }
 
-    if (minPrice !== null || maxPrice !== null) {
-      where.amount = {};
-      if (minPrice !== null) {
-        where.amount.gte = minPrice;
-      }
-      if (maxPrice !== null) {
-        where.amount.lte = maxPrice;
-      }
-    }
-
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
@@ -49,10 +37,19 @@ export async function getProducts(searchParams = {}) {
       ];
     }
 
+    // Date filters
     if (dateFilter === "oneMonth") {
       const oneMonthAgo = new Date();
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
       where.createdAt = { lte: oneMonthAgo };
+    } else if (dateFilter === "thisMonth") {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      where.createdAt = { gte: startOfMonth };
+    } else if (dateFilter === "lastSixMonths") {
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      where.createdAt = { gte: sixMonthsAgo };
     }
 
     const [products, total] = await Promise.all([
@@ -217,7 +214,7 @@ export async function deleteProduct(id) {
 }
 
 // Update product status
-export async function updateProductStatus(id, status, deliveredAmount) {
+export async function updateProductStatus(id, status, finalJoma, discount) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -239,24 +236,18 @@ export async function updateProductStatus(id, status, deliveredAmount) {
       status: status,
     };
 
-    // If status is delivered and amount is provided, update joma and calculate discount
-    if (status === "delivered" && deliveredAmount) {
-      const deliveredAmt = parseFloat(deliveredAmount) || 0;
+    // If status is delivered, update joma and discount
+    if (status === "delivered") {
       const totalAmount = product.amount || 0;
-      const currentJoma = product.joma || 0;
-      const remaining = totalAmount - currentJoma; // বাকি টাকা (delivery এর আগে)
       
-      // Update joma with delivered amount
-      updateData.joma = currentJoma + deliveredAmt;
+      // Update joma (already calculated in component)
+      updateData.joma = finalJoma || product.joma || 0;
       
-      // যদি দেওয়া টাকা বাকি টাকার থেকে কম হয়, তাহলে discount
-      if (deliveredAmt < remaining) {
-        const discountAmount = remaining - deliveredAmt;
-        updateData.discount = (product.discount || 0) + discountAmount;
-      }
+      // Update discount (already calculated in component)
+      updateData.discount = discount || 0;
       
-      // Calculate final remaining after discount
-      const finalRemaining = totalAmount - updateData.joma - (updateData.discount || 0);
+      // Calculate final remaining
+      const finalRemaining = totalAmount - updateData.joma - updateData.discount;
       if (finalRemaining > 0) {
         updateData.bakiAmount = finalRemaining;
         updateData.baki = true;
